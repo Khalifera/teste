@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Gestor V30.9 - Swipe Edition</title>
+        <meta name="theme-color" content="#2563eb">
+        
+        <link rel="stylesheet" href="style.css">
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <div class="top-btns">
+                <span class="sandbox-badge">🧪 MODO SANDBOX</span>
+                <button class="config-btn" onclick="toggleNotifications()" id="btnNotif" title="Lembrete 20h">🔔</button>
+                <button class="config-btn" onclick="toggleSandbox()" id="btnSandbox" title="Simulador">🧪</button>
+                <button class="config-btn" onclick="toggleTheme()" id="btnTheme">🌑</button>
+                <button class="config-btn" onclick="togglePrivacy()" id="btnPrivacy">👁️</button>
+                <button class="config-btn" onclick="openCatModal()">🏷️</button>
+                <button class="config-btn" onclick="openFixedModal()">📅</button>
+                <button class="config-btn" onclick="openSetupModal()">⚙️</button>
+            </div>
+
+            <div id="painelRes" class="result-card bg-safe">
+                <div class="dash-tabs">
+                    <button class="dash-tab-btn active" onclick="switchDash('nums')">💰 Resumo</button>
+                    <button class="dash-tab-btn" onclick="switchDash('graph')">📈 Gráfico</button>
+                </div>
+                
+                <div id="dash-nums" class="dash-view active">
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 15px;">
+                        <span style="font-size:0.9rem; text-transform:uppercase; font-weight:600; opacity:0.9;">Saldo Disponível</span>
+                        <span class="big-val blur-target" id="valSaldoLiq">R$ 0,00</span>
+                    </div>
+                    <div class="sub-row">
+                        <div style="text-align:left">
+                            <span style="font-size:0.85rem; opacity:0.8">Diário</span><br>
+                            <strong id="valDiario" class="blur-target" style="font-size:1.1rem">R$ 0,00</strong>
+                        </div>
+                        <div style="text-align:center">
+                            <span style="font-size:0.85rem; opacity:0.8">Semanal</span><br>
+                            <strong id="valSemanal" class="blur-target" style="font-size:1.1rem">R$ 0,00</strong>
+                        </div>
+                        <div style="text-align:right">
+                            <span id="labelStatus" style="font-weight:bold; font-size:0.85rem">...</span><br>
+                            <span id="infoDias" style="font-size:0.8rem; opacity:0.8">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="dash-graph" class="dash-view">
+                    <div class="chart-wrapper">
+                        <div class="chart-controls">
+                            <button class="chart-toggle active" onclick="setChartType('bar')">Fluxo</button>
+                            <button class="chart-toggle" onclick="setChartType('pie')">Pizza</button>
+                            <button class="chart-toggle" onclick="setChartType('line')">Evolução</button>
+                        </div>
+                        <div id="pieFilterOpts" class="pie-filters" style="display:none;">
+                            <button class="pie-filter-btn active" onclick="setPieFilter('all')">Tudo</button>
+                            <button class="pie-filter-btn" onclick="setPieFilter('debit')">Débito</button>
+                            <button class="pie-filter-btn" onclick="setPieFilter('credit')">Crédito</button>
+                        </div>
+                        <canvas id="balanceChart" style="max-height: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="limit-container" style="margin-bottom:25px; background:var(--card); border:1px solid var(--border); padding:20px; border-radius:16px; box-shadow:var(--shadow);">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.9rem; color:var(--text-muted); margin-bottom:8px">
+                    <span>Limite Cartão</span>
+                    <span id="txtCreditLimit" class="blur-target" style="color:var(--orange)">...</span>
+                </div>
+                <div style="background:var(--input-bg); height:10px; border-radius:5px; overflow:hidden;">
+                    <div id="barCredit" style="height:100%; background:var(--orange); width:0%; transition:width 0.5s ease"></div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('budget')">📊 Lançamentos</button>
+                <button class="tab-btn" onclick="switchTab('wishes')">✨ Desejos</button>
+            </div>
+
+            <div id="viewBudget" class="view-section active">
+                <div class="header-nav">
+                    <button class="nav-btn" onclick="mudarMes(-1)">‹</button>
+                    <div class="nav-group">
+                        <input type="month" id="navMonth" onchange="pickMonth(this.value)">
+                    </div>
+                    <button class="nav-btn" onclick="mudarMes(1)">›</button>
+                    <button class="btn-report" onclick="openReport()">📄</button>
+                </div>
+                
+                <div id="gridCal" class="grid"></div>
+
+                <div class="box box-green" id="boxIn">
+                    <div class="box-head" onclick="toggleBox('boxIn')">
+                        <div><span class="arrow-toggle">▼</span>Entradas</div>
+                        <div class="head-actions">
+                            <button class="btn-copy" title="Repetir anterior" onclick="event.stopPropagation(); copyPrev('in')">🔄</button>
+                            <span id="totIn" class="blur-target">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <ul id="listIn" class="list"></ul>
+                        <div class="input-row">
+                            <input type="number" id="inDate" class="input-date" placeholder="Dia" min="1" max="31" style="width:70px; text-align:center">
+                            <select id="catIn" class="input-cat" style="flex:1"></select>
+                            <input id="inNome" class="input-name" placeholder="Descrição" style="flex:2">
+                        </div>
+                        <div class="input-row">
+                            <input id="inObs" class="input-obs" placeholder="Obs (opcional)" style="flex:2">
+                            <input type="number" id="inVal" class="input-val" placeholder="R$ 0,00" step="0.01" style="flex:1">
+                            <button class="btn-add" style="background:var(--green)" onclick="add('in')">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box box-red" id="boxDeb">
+                    <div class="box-head" onclick="toggleBox('boxDeb')">
+                        <div><span class="arrow-toggle">▼</span>Débito</div>
+                        <div class="head-actions">
+                            <button class="btn-copy" title="Repetir anterior" onclick="event.stopPropagation(); copyPrev('debit')">🔄</button>
+                            <span id="totDebit" class="blur-target">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <ul id="listDebit" class="list"></ul>
+                        <div class="input-row">
+                            <input type="number" id="debDate" class="input-date" placeholder="Dia" min="1" max="31" style="width:70px; text-align:center">
+                            <select id="catDeb" class="input-cat" style="flex:1"></select>
+                            <input id="debNome" class="input-name" placeholder="Descrição" style="flex:2">
+                        </div>
+                        <div class="input-row">
+                            <input id="debObs" class="input-obs" placeholder="Obs (opcional)" style="flex:2">
+                            <input type="number" id="debVal" class="input-val" placeholder="R$ 0,00" step="0.01" style="flex:1">
+                            <button class="btn-add" style="background:var(--red)" onclick="add('debit')">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box box-orange" id="boxCred">
+                    <div class="box-head" onclick="toggleBox('boxCred')">
+                        <div style="display:flex; flex-direction:column">
+                            <div style="display:flex; align-items:center"><span class="arrow-toggle">▼</span>Crédito</div>
+                            <span id="credCutoffLabel" style="font-size:0.75rem; font-weight:normal; opacity:0.9; margin-left:18px">...</span>
+                        </div>
+                        <div class="head-actions">
+                            <button class="btn-copy" title="Repetir anterior" onclick="event.stopPropagation(); copyPrev('credit')">🔄</button>
+                            <span id="totCredit" class="blur-target">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <ul id="listCredit" class="list"></ul>
+                        <div class="input-row">
+                            <input type="number" id="credDate" class="input-date" placeholder="Dia" min="1" max="31" style="width:70px; text-align:center">
+                            <select id="catCred" class="input-cat" style="flex:1"></select>
+                            <input id="credNome" class="input-name" placeholder="Descrição" style="flex:2">
+                        </div>
+                        <div class="input-row">
+                            <input id="credObs" class="input-obs" placeholder="Obs (opcional)" style="flex:2">
+                            <input type="number" id="credVal" class="input-val" placeholder="R$ 0,00" step="0.01" style="flex:1">
+                            <button class="btn-add" style="background:var(--orange)" onclick="add('credit')">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box box-gray">
+                    <div class="box-head"><span>Fatura Paga (Mês Atual)</span></div>
+                    <div class="box-content">
+                        <div class="input-row">
+                            <input type="number" id="invPaid" placeholder="Valor pago..." step="0.01" style="flex:2">
+                            <button class="btn-add" style="background:#475569; width:auto; padding:0 20px; font-size:0.9rem" onclick="payInvoice()">Pagar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="viewWishes" class="view-section">
+                <div class="box" style="border: 2px solid var(--purple); background: var(--bg);">
+                    <div class="box-head" style="background: var(--purple);"><span>Desejos</span></div>
+                    <div class="box-content" style="background: var(--card);">
+                        <div class="input-row">
+                            <input id="wishNome" placeholder="Item..." style="flex:2">
+                            <input type="number" id="wishVal" placeholder="0.00" step="0.01" style="flex:1">
+                            <button class="btn-add" style="background:var(--purple)" onclick="add('wishes')">+</button>
+                        </div>
+                        <ul id="listWish" class="list" style="margin-top:15px"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="fab-container" id="fabMenu">
+            <button class="fab-main" onclick="toggleFab()">+</button>
+            <div class="fab-wrapper">
+                <span class="fab-label">Crédito</span>
+                <button class="fab-opt" style="background:var(--orange)" onclick="openQuickAdd('credit')">💳</button>
+            </div>
+            <div class="fab-wrapper">
+                <span class="fab-label">Débito</span>
+                <button class="fab-opt" style="background:var(--red)" onclick="openQuickAdd('debit')">💸</button>
+            </div>
+            <div class="fab-wrapper">
+                <span class="fab-label">Receita</span>
+                <button class="fab-opt" style="background:var(--green)" onclick="openQuickAdd('in')">💰</button>
+            </div>
+        </div>
+
+        <div id="quickAddModal" class="modal-overlay">
+            <div class="modal">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h3 id="quickTitle" style="margin:0; font-size:1.3rem">Novo Lançamento</h3>
+                    <button onclick="closeQuickAdd()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text); opacity:0.7">✕</button>
+                </div>
+                <input type="hidden" id="quickType">
+                <div class="modal-opt">
+                    <label>Data</label>
+                    <input type="number" id="quickDate" placeholder="Dia" min="1" max="31" style="width:100%; text-align:center; padding:15px; font-size:1.1rem">
+                </div>
+                <div class="modal-opt">
+                    <label>Categoria</label>
+                    <select id="quickCat" style="width:100%"></select>
+                </div>
+                <div class="modal-opt">
+                    <label>Descrição</label>
+                    <input id="quickDesc" placeholder="Ex: Mercado" style="width:100%">
+                </div>
+                 <div class="modal-opt">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="quickVal" step="0.01" placeholder="0.00" style="width:100%; font-size:1.5rem; padding:15px; font-weight:bold; color:var(--primary)">
+                </div>
+                <div class="modal-btns">
+                    <button class="btn-cancel" onclick="closeQuickAdd()">Cancelar</button>
+                    <button class="btn-confirm" onclick="saveQuickAdd()">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="reportModal" class="modal-overlay">
+            <div class="modal">
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px">
+                    <strong style="font-size:1.2rem">Relatório Mensal</strong>
+                    <button onclick="document.getElementById('reportModal').style.display='none'" style="background:none; border:none; cursor:pointer; color:var(--text); font-size:1.2rem; opacity:0.7">✕</button>
+                </div>
+                <div id="printableArea">
+                    <div class="report-header">
+                        <h3 class="report-title" id="repTitle">Extrato Financeiro</h3>
+                        <div id="repSubtitle" style="color:#64748b; font-size:1rem; margin-top:5px">...</div>
+                    </div>
+                    <div style="border-bottom:2px solid #e2e8f0; margin:20px 0"></div>
+                    <div class="rep-filters" data-html2canvas-ignore="true" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px">
+                        <button class="rep-btn active" onclick="updateReport('all')">Tudo</button>
+                        <button class="rep-btn" onclick="updateReport('in')">Entradas</button>
+                        <button class="rep-btn" onclick="updateReport('out')">Saídas</button>
+                    </div>
+                    <div id="reportContent"></div>
+                </div>
+                <button id="btnPdf" class="btn-confirm" style="background:#334155; margin-top:20px" onclick="exportPDF()">📄 Salvar PDF</button>
+            </div>
+        </div>
+
+        <div id="setupModal" class="modal-overlay">
+            <div class="modal">
+                <h3>Configurações</h3>
+                <div class="modal-opt">
+                    <label>Limite Cartão</label>
+                    <input type="number" id="setupLimit" style="width:100%">
+                </div>
+                <div class="modal-opt">
+                    <label>Meta Diária (Sobra)</label>
+                    <input type="number" id="setupGoal" style="width:100%">
+                </div>
+                <div class="backup-section" style="border-top:1px dashed var(--border); padding-top:20px; margin-top:20px">
+                    <h4 style="margin-top:0">Dados</h4>
+                    <button style="background:#3b82f6; color:white; border:none; padding:12px; width:100%; border-radius:10px; margin-bottom:10px; font-weight:600" onclick="exportData()">⬇️ Backup</button>
+                    <button style="background:var(--input-bg); color:var(--text); border:none; padding:12px; width:100%; border-radius:10px; font-weight:600" onclick="document.getElementById('importFile').click()">⬆️ Restaurar</button>
+                    <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
+                </div>
+                <button class="btn-confirm" onclick="saveSetup()">Salvar</button>
+            </div>
+        </div>
+
+        <div id="catModal" class="modal-overlay">
+            <div class="modal">
+                <h3>Categorias</h3>
+                <div class="cat-group" style="margin-bottom:20px">
+                    <h4 style="color:var(--red); border-bottom:1px solid var(--border); padding-bottom:5px">Saídas</h4>
+                    <div class="input-row">
+                        <input id="newCatExpIcon" placeholder="🎉" style="width:60px; text-align:center">
+                        <input id="newCatExpName" placeholder="Nome..." style="flex:1">
+                        <button class="cat-btn-add btn-add" style="background:var(--primary); height:auto; width:auto; padding:0 15px; font-size:1rem" onclick="addNewCat('expense')">Add</button>
+                    </div>
+                    <ul id="listCatExp" class="cat-list-edit" style="list-style:none; padding:0; margin-top:10px; max-height:150px; overflow-y:auto"></ul>
+                </div>
+                <div class="cat-group">
+                    <h4 style="color:var(--green); border-bottom:1px solid var(--border); padding-bottom:5px">Entradas</h4>
+                    <div class="input-row">
+                        <input id="newCatIncIcon" placeholder="💰" style="width:60px; text-align:center">
+                        <input id="newCatIncName" placeholder="Nome..." style="flex:1">
+                        <button class="cat-btn-add btn-add" style="background:var(--primary); height:auto; width:auto; padding:0 15px; font-size:1rem" onclick="addNewCat('income')">Add</button>
+                    </div>
+                    <ul id="listCatInc" class="cat-list-edit" style="list-style:none; padding:0; margin-top:10px; max-height:150px; overflow-y:auto"></ul>
+                </div>
+                <button class="btn-cancel" style="margin-top:20px" onclick="document.getElementById('catModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+
+        <div id="fixedModal" class="modal-overlay">
+            <div class="modal">
+                <h3>Despesas Fixas</h3>
+                <button class="btn-confirm" style="margin-bottom:20px; background:var(--orange)" onclick="forceLaunchFixed()">⚡ Lançar Agora</button>
+                <div style="background:var(--input-bg); border:1px solid var(--border); padding:15px; border-radius:12px; margin-bottom:15px">
+                    <div class="input-row" style="margin-top:0">
+                        <input id="fixName" placeholder="Nome" style="flex:2">
+                        <input type="number" id="fixVal" placeholder="$$" style="flex:1">
+                    </div>
+                    <div class="input-row">
+                        <input type="number" id="fixDay" placeholder="Dia" style="width:70px">
+                        <select id="fixType" style="flex:1">
+                            <option value="debit">Débito</option>
+                            <option value="credit">Crédito</option>
+                        </select>
+                        <select id="fixCat" class="dynamic-cat-expense" style="flex:1"></select>
+                    </div>
+                    <button class="btn-confirm" style="margin-top:10px; background:var(--text); color:var(--card)" onclick="addFixed()">+ Adicionar</button>
+                </div>
+                <ul id="listFixed" class="list" style="max-height:200px; overflow-y:auto; border:1px solid var(--border); padding:10px; border-radius:12px; background:var(--card)"></ul>
+                <button class="btn-cancel" style="margin-top:15px" onclick="document.getElementById('fixedModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+
+        <div id="buyModal" class="modal-overlay">
+            <div class="modal">
+                <h3>Comprar Item</h3>
+                <p id="modalItemName" style="color:var(--primary); font-weight:bold; font-size:1.2rem; margin-bottom:20px">...</p>
+                <div class="modal-opt">
+                    <label>Forma de Pagamento</label>
+                    <select id="modalType" onchange="toggleInstallments()" style="width:100%">
+                        <option value="debit">Débito</option>
+                        <option value="credit">Crédito</option>
+                    </select>
+                </div>
+                <div class="modal-opt">
+                    <label>Categoria</label>
+                    <select id="modalCat" class="dynamic-cat-expense" style="width:100%"></select>
+                </div>
+                <div id="creditOptions" style="display:none;">
+                    <div class="modal-opt">
+                        <label>Número de Parcelas</label>
+                        <input type="number" id="modalInstallments" value="1" min="1" style="width:100%">
+                    </div>
+                    <div class="modal-opt">
+                        <label>Mês de Início</label>
+                        <input type="month" id="modalStartMonth" style="width:100%">
+                    </div>
+                </div>
+                <div class="modal-btns">
+                    <button class="btn-cancel" onclick="closeBuyModal()">Cancelar</button>
+                    <button class="btn-confirm" onclick="confirmBuy()">Confirmar Compra</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="app.js"></script>
+    </body>
+</html>
